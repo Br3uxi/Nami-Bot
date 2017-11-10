@@ -1,0 +1,10 @@
+# JetBrains IDE
+.idea
+
+# Config
+config.ini
+
+# Local Test Scripts, Gifs and Virtual Env
+/testing/
+/venv/
+/gifs/

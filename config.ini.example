@@ -1,0 +1,8 @@
+[Discord]
+token =
+
+[Animexx]
+client_id =
+client_secret =
+# You can leave the Access Token blank, its automatically fetched
+access_token =
