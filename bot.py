@@ -9,7 +9,7 @@ import discord
 import pendulum
 
 from requests_oauthlib import OAuth2Session
-from oauthlib.oauth2 import TokenExpiredError
+from oauthlib.oauth2 import TokenExpiredError, BackendApplicationClient
 
 __author__ = 'Breuxi'
 
@@ -19,12 +19,16 @@ Markdown Link - [Name](URL)
 
 client = discord.Client()
 
-token = ''
+discord_token = ''
+animexx_client_id = ''
+animexx_client_secret = ''
 
 keks_gifs = [
     'https://media.giphy.com/media/RWeGuRoDTtIli/giphy.gif',
     'https://media.giphy.com/media/AMiH2CuUvzk1q/giphy.gif'
 ]
+
+animexx_token_url = 'https://ws.animexx.de/oauth2/token/'
 
 regexp = re.compile(r'(\bn+?[a, e, o]+?i+?(([n,]+?)|e+?n+?)\b)|(\bn+?[o, u]+?p+?e+?\b)|(n(ö+|ö+?h+?ö+?))|ne+',
                     re.IGNORECASE)
@@ -35,8 +39,10 @@ if os.path.exists('config.ini'):
     config = configparser.ConfigParser()
     config.read("config.ini")
     if config.has_section("Discord") and config.has_section("Animexx") and config.has_option("Discord", "token") and config.has_option("Animexx", "client_id") and config.has_option("Animexx", "client_secret"):
-        token = config.get('Discord', 'token')
+        discord_token = config.get('Discord', 'token')
         animexx_client_id = config.get('Animexx', 'client_id')
+        animexx_client_secret = config.get('Animexx', 'client_secret')
+        animexx_access_token = config.get('Animexx', 'access_token')
     else:
         print("Config unvollständig! Bitte Discord Token und Animexx Client hinzufügen")
         sys.exit(1)
@@ -59,14 +65,18 @@ async def on_ready():
 
 def get_animexx_json(endpoint):
     try:
-        oauth_client = OAuth2Session(animexx_client_id, token={'access_token': token, 'token_type': 'Bearer'})
+        oauth_client = OAuth2Session(animexx_client_id, token={'access_token': animexx_access_token, 'token_type': 'Bearer'})
         r = oauth_client.get(endpoint)
     except TokenExpiredError as e:
         print("Token expired")
+        client = BackendApplicationClient(client_id=animexx_client_id)
+        oauth = OAuth2Session(client=client)
+        token = oauth.fetch_token(token_url=animexx_token_url, auth=False, client_id=animexx_client_id,
+                                  client_secret=animexx_client_secret)
         config.set('Animexx', 'access_token', token)
-        with open('config.cfg', 'wb') as configfile:
+        with open('config.ini', 'wb') as configfile:
             config.write(configfile)
-        oauth_client = OAuth2Session(animexx_client_id, token=token)
+        oauth_client = OAuth2Session(animexx_client_id, token={'access_token': token, 'token_type': 'Bearer'})
         r = oauth_client.get(endpoint)
     return r.json()
 
@@ -121,7 +131,8 @@ async def on_message(message):
             pass
         else:
             con_json = get_animexx_json(
-                "https://ws.animexx.de/json/events/event/suche_details?api=2&krits={\"datum_zukunft\":true}")
+                "https://ws.animexx.de/json/events/event/suche_details?api=3&krits={\"datum_zukunft\":true}")
+            #print(con_json)
             if con_json["success"]:
                 em = discord.Embed(colour=0xf7acd7)
                 em.set_author(name="Conventions", icon_url=client.user.avatar_url)
@@ -161,4 +172,4 @@ async def on_message(message):
         await client.send_message(message.channel, embed=em)
 
 
-client.run(token)
+client.run(discord_token)
