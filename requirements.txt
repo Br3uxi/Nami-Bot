@@ -16,4 +16,4 @@ requests-oauthlib==0.8.0
 six==1.11.0
 tzlocal==1.4
 urllib3==1.22
-websockets==3.4
+websockets==9.1
